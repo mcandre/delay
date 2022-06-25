@@ -8,6 +8,10 @@
 
 * [Bela Mini](https://shop.bela.io/products/bela-mini-starter-kit)
 
+## Optional
+
+* TRRS to TRS adapter for audio output from Bela Mini
+
 # LICENSE
 
 FreeBSD
