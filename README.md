@@ -19,7 +19,13 @@ FreeBSD
 # DEPLOY
 
 ```console
-$ build_project.sh --force .
+$ build_project.sh --force -b .
+```
+
+# HALT
+
+```console
+$ stop_running.sh
 ```
 
 # INSTALL TO BELA BOOT

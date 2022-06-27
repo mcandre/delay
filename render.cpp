@@ -9,23 +9,24 @@
 // Buffer holding previous samples per channel
 float gDelayBuffer_l[DELAY_BUFFER_SIZE] = {0};
 float gDelayBuffer_r[DELAY_BUFFER_SIZE] = {0};
-// Write pointer
+
 int gDelayBufWritePtr = 0;
-// Amount of delay
+
 float gDelayAmount = 1.0;
-// Amount of feedback
-float gDelayFeedbackAmount = 0.999;
-// Level of pre-delay input
-float gDelayAmountPre = 0.75;
+
+float gDelayFeedbackAmount = 0.25;
+
+float gDelayAmountPre = 0.9;
+
 // Amount of delay in samples (needs to be smaller than or equal to the buffer size defined above)
 int gDelayInSamples = 22050;
 
 // Butterworth coefficients for low-pass filter @ 8000Hz
-float gDel_a0 = 0.1772443606634904;
-float gDel_a1 = 0.3544887213269808;
-float gDel_a2 = 0.1772443606634904;
+float gDel_a0 =  0.1772443606634904;
+float gDel_a1 =  0.3544887213269808;
+float gDel_a2 =  0.1772443606634904;
 float gDel_a3 = -0.5087156198145868;
-float gDel_a4 = 0.2176930624685485;
+float gDel_a4 =  0.2176930624685485;
 
 float max_volume = 2000.0;
 
@@ -59,11 +60,11 @@ void render(BelaContext *context, void *userData) {
         // 2. Get the previously delayed sample from the buffer, multiply it by the feedback gain and add it to the current sample
         float del_input_l = (
             gDelayAmountPre * out_l +
-            gDelayBuffer_l[(gDelayBufWritePtr-gDelayInSamples+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] * gDelayFeedbackAmount
+            gDelayBuffer_l[(gDelayBufWritePtr - gDelayInSamples + DELAY_BUFFER_SIZE) % DELAY_BUFFER_SIZE] * gDelayFeedbackAmount
         );
 
         float del_input_r = (
-            gDelayAmountPre * out_r + gDelayBuffer_r[(gDelayBufWritePtr-gDelayInSamples+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] * gDelayFeedbackAmount
+            gDelayAmountPre * out_r + gDelayBuffer_r[(gDelayBufWritePtr - gDelayInSamples + DELAY_BUFFER_SIZE) % DELAY_BUFFER_SIZE] * gDelayFeedbackAmount
         );
 
         // Remember these values so that we can update the filter later, as we're about to overwrite it
@@ -71,11 +72,11 @@ void render(BelaContext *context, void *userData) {
         float temp_x_r = del_input_r;
 
         // Apply the butterworth filter (y = a0*x0 + a1*x1 + a2*x2 + a3*y1 + a4*y2)
-        del_input_l = gDel_a0*del_input_l +
-            gDel_a1*gDel_x1_l +
-            gDel_a2*gDel_x2_l +
-            gDel_a3*gDelayBuffer_l[(gDelayBufWritePtr-1+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] +
-            gDel_a4*gDelayBuffer_l[(gDelayBufWritePtr-2+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE];
+        del_input_l = gDel_a0 * del_input_l +
+            gDel_a1 * gDel_x1_l +
+            gDel_a2 * gDel_x2_l +
+            gDel_a3 * gDelayBuffer_l[(gDelayBufWritePtr - 1 + DELAY_BUFFER_SIZE) % DELAY_BUFFER_SIZE] +
+            gDel_a4 * gDelayBuffer_l[(gDelayBufWritePtr - 2 + DELAY_BUFFER_SIZE) % DELAY_BUFFER_SIZE];
 
         // Update previous values for next iteration of filter processing
         gDel_x2_l = gDel_x1_l;
@@ -84,10 +85,11 @@ void render(BelaContext *context, void *userData) {
         gDel_y1_l = del_input_l;
 
         // Repeat process for the right channel
-        del_input_r = gDel_a0*del_input_r +
-            gDel_a1*gDel_x1_r +
-            gDel_a2*gDel_x2_r +
-            gDel_a3*gDelayBuffer_r[(gDelayBufWritePtr-1+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] + gDel_a4*gDelayBuffer_r[(gDelayBufWritePtr-2+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE];
+        del_input_r = gDel_a0 * del_input_r +
+            gDel_a1 * gDel_x1_r +
+            gDel_a2 * gDel_x2_r +
+            gDel_a3 * gDelayBuffer_r[(gDelayBufWritePtr - 1 + DELAY_BUFFER_SIZE) % DELAY_BUFFER_SIZE] +
+            gDel_a4 * gDelayBuffer_r[(gDelayBufWritePtr - 2 + DELAY_BUFFER_SIZE) % DELAY_BUFFER_SIZE];
 
         gDel_x2_r = gDel_x1_r;
         gDel_x1_r = temp_x_r;
@@ -98,9 +100,11 @@ void render(BelaContext *context, void *userData) {
         gDelayBuffer_l[gDelayBufWritePtr] = del_input_l;
         gDelayBuffer_r[gDelayBufWritePtr] = del_input_r;
 
+        size_t i = (gDelayBufWritePtr - gDelayInSamples + DELAY_BUFFER_SIZE) % DELAY_BUFFER_SIZE;
+
         // // Get the delayed sample (by reading `gDelayInSamples` many samples behind our current write pointer) and add it to our output sample
-        out_l += gDelayBuffer_l[(gDelayBufWritePtr-gDelayInSamples+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] * gDelayAmount;
-        out_r += gDelayBuffer_r[(gDelayBufWritePtr-gDelayInSamples+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] * gDelayAmount;
+        out_l += gDelayAmount * gDelayBuffer_l[i];
+        out_r += gDelayAmount * gDelayBuffer_r[i];
 
         out_l = std::min(out_l, max_volume);
         out_r = std::min(out_r, max_volume);
