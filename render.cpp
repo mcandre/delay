@@ -56,46 +56,43 @@ float gDel_x2_r = 0;
 float gDel_y1_r = 0;
 float gDel_y2_r = 0;
 
-bool setup(BelaContext *context, void *userData)
-{
+bool setup(BelaContext *context, void *userData) { return true; }
 
-    return true;
-}
-
-void render(BelaContext *context, void *userData)
-{
-
-    for(unsigned int n = 0; n < context->audioFrames; n++) {
-
+void render(BelaContext *context, void *userData) {
+    for (unsigned int n = 0; n < context->audioFrames; n++) {
         float out_l = 0;
         float out_r = 0;
 
-        // Read audio inputs
-        out_l = audioRead(context,n,0);
-        out_r = audioRead(context,n,1);
+        out_l = audioRead(context, n, 0);
+        out_r = audioRead(context, n, 1);
 
         // Increment delay buffer write pointer
-        if(++gDelayBufWritePtr>DELAY_BUFFER_SIZE)
+        if (++gDelayBufWritePtr > DELAY_BUFFER_SIZE) {
             gDelayBufWritePtr = 0;
+        }
 
         // Calculate the sample that will be written into the delay buffer...
         // 1. Multiply the current (dry) sample by the pre-delay gain level (set above)
         // 2. Get the previously delayed sample from the buffer, multiply it by the feedback gain and add it to the current sample
-        float del_input_l = (gDelayAmountPre * out_l + gDelayBuffer_l[(gDelayBufWritePtr-gDelayInSamples+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] * gDelayFeedbackAmount);
-        float del_input_r = (gDelayAmountPre * out_r + gDelayBuffer_r[(gDelayBufWritePtr-gDelayInSamples+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] * gDelayFeedbackAmount);
+        float del_input_l = (
+            gDelayAmountPre * out_l +
+            gDelayBuffer_l[(gDelayBufWritePtr-gDelayInSamples+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] * gDelayFeedbackAmount
+        );
 
-        // ...but let's not write it into the buffer yet! First we need to apply the low-pass filter!
+        float del_input_r = (
+            gDelayAmountPre * out_r + gDelayBuffer_r[(gDelayBufWritePtr-gDelayInSamples+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] * gDelayFeedbackAmount
+        );
 
         // Remember these values so that we can update the filter later, as we're about to overwrite it
         float temp_x_l = del_input_l;
         float temp_x_r = del_input_r;
 
         // Apply the butterworth filter (y = a0*x0 + a1*x1 + a2*x2 + a3*y1 + a4*y2)
-        del_input_l = gDel_a0*del_input_l
-                    + gDel_a1*gDel_x1_l
-                    + gDel_a2*gDel_x2_l
-                    + gDel_a3*gDelayBuffer_l[(gDelayBufWritePtr-1+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE]
-                    + gDel_a4*gDelayBuffer_l[(gDelayBufWritePtr-2+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE];
+        del_input_l = gDel_a0*del_input_l +
+            gDel_a1*gDel_x1_l +
+            gDel_a2*gDel_x2_l +
+            gDel_a3*gDelayBuffer_l[(gDelayBufWritePtr-1+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] +
+            gDel_a4*gDelayBuffer_l[(gDelayBufWritePtr-2+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE];
 
         // Update previous values for next iteration of filter processing
         gDel_x2_l = gDel_x1_l;
@@ -104,11 +101,10 @@ void render(BelaContext *context, void *userData)
         gDel_y1_l = del_input_l;
 
         // Repeat process for the right channel
-        del_input_r = gDel_a0*del_input_r
-                    + gDel_a1*gDel_x1_r
-                    + gDel_a2*gDel_x2_r
-                    + gDel_a3*gDelayBuffer_r[(gDelayBufWritePtr-1+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE]
-                    + gDel_a4*gDelayBuffer_r[(gDelayBufWritePtr-2+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE];
+        del_input_r = gDel_a0*del_input_r +
+            gDel_a1*gDel_x1_r +
+            gDel_a2*gDel_x2_r +
+            gDel_a3*gDelayBuffer_r[(gDelayBufWritePtr-1+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] + gDel_a4*gDelayBuffer_r[(gDelayBufWritePtr-2+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE];
 
         gDel_x2_r = gDel_x1_r;
         gDel_x1_r = temp_x_r;
@@ -126,7 +122,6 @@ void render(BelaContext *context, void *userData)
         out_l = std::min(out_l, max_volume);
         out_r = std::min(out_r, max_volume);
 
-        // Write the sample into the output buffer -- done!
         audioWrite(context, n, 0, out_l);
         audioWrite(context, n, 1, out_r);
     }
