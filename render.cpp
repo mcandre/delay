@@ -1,32 +1,5 @@
 /*
- ____  _____ _        _
-| __ )| ____| |      / \
-|  _ \|  _| | |     / _ \
-| |_) | |___| |___ / ___ \
-|____/|_____|_____/_/   \_\
-http://bela.io
-*/
-/**
-\example Audio/delay/render.cpp
-
-Simple delay
-------------
-
-This example demonstrates how to apply a feedback delay with an incorporated low-pass filter to an audio signal.
-
-In order to create a delay effect we need to allocate a buffer (i.e. an array of samples) that holds previous samples.
-Every time we output a sample we need to go back in time and retrieve the sample that occurred `n` samples ago, where
-`n` is our delay in samples. The buffer allows us to do just this. For every incoming sample we write its value into
-the buffer. We use a so-called write pointer (`gDelayBufWritePtr`) in order to keep track of the index of the buffer
-we need to write into. This write pointer is incremented on every sample and wrapped back around to 0 when its reached
-the last index of the buffer size (this technique is commonly referred to as a `circular buffer` or a `ring buffer`).
-
-We go a bit further by applying feedback and filtering to the delay in order to make the effect more interesting. To
-apply feedback to the delay, we take the sample that occurred `gDelayInSamples` ago, multiply it by our
-`gDelayFeedbackAmount` parameter and add it to the dry input signal that we will write into the buffer. This way, there
-will always be a trace of the previously delayed sample in the output that will slowly fade away over time.
-
-Next, we apply a low-pass filter. We have pre-calculated the coefficients that are required to apply a Butterworth
+We apply a low-pass filter. We have pre-calculated the coefficients that are required to apply a Butterworth
 (or `biquad`) filter, which is expressed as follows: y = a0*x0 + a1*x1 + a2*x2 + a3*y1 + a4*y2, where x0 and x1 are
 the previous *input* (i.e. unfiltered) samples and y0 and y1 are the previous *output* (i.e. filtered) samples.
 We keep track of these previous input and output samples for each channel using global variables in order to apply
@@ -43,6 +16,8 @@ using this parameter is that when turning down the gain we can let the delay rin
 input into the effect. Conversely, we can introduce the delay effect naturally without fading in previous output
 of the effect.
 */
+
+#include <algorithm>
 
 #include <Bela.h>
 
@@ -148,13 +123,8 @@ void render(BelaContext *context, void *userData)
         out_l += gDelayBuffer_l[(gDelayBufWritePtr-gDelayInSamples+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] * gDelayAmount;
         out_r += gDelayBuffer_r[(gDelayBufWritePtr-gDelayInSamples+DELAY_BUFFER_SIZE)%DELAY_BUFFER_SIZE] * gDelayAmount;
 
-		if (out_l > max_volume) {
-			out_l = max_volume;
-		}
-
-		if (out_r > max_volume) {
-			out_r = max_volume;
-		}
+        out_l = std::min(out_l, max_volume);
+        out_r = std::min(out_r, max_volume);
 
         // Write the sample into the output buffer -- done!
         audioWrite(context, n, 0, out_l);

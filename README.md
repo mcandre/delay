@@ -15,3 +15,21 @@
 # LICENSE
 
 FreeBSD
+
+# DEPLOY
+
+```console
+$ build_project.sh --force .
+```
+
+# INSTALL TO BELA BOOT
+
+```console
+$ set_startup.sh delay
+```
+
+# UNINSTALL FROM BELA BOOT
+
+```console
+$ set_startup.sh delay nostartup
+```
