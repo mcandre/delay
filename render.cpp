@@ -1,21 +1,4 @@
-/*
-We apply a low-pass filter. We have pre-calculated the coefficients that are required to apply a Butterworth
-(or `biquad`) filter, which is expressed as follows: y = a0*x0 + a1*x1 + a2*x2 + a3*y1 + a4*y2, where x0 and x1 are
-the previous *input* (i.e. unfiltered) samples and y0 and y1 are the previous *output* (i.e. filtered) samples.
-We keep track of these previous input and output samples for each channel using global variables in order to apply
-the filter.
-
-Finally we take the processed sample for each channel and write it into the corresponding delay buffer (`gDelayBuffer_l`
-and `gDelayBuffer_r`), so that in the future (after `gDelayInSamples` samples) we can retrieve it again! Last but not
-least, we read the sample from the buffer that was written `gDelayInSamples` ago and add it to the output.
-
-Note that we have to ways of changing the volume of the delay effect. One way is to change the overall gain using
-the `gDelayAmount` parameter: this will immediately raise or lower the volume of the delayed signal. The other option
-is to use the `gDelayAmountPre` parameter, which will apply gain to the *input* of the delay line. The advantage of
-using this parameter is that when turning down the gain we can let the delay ring out while not letting any new
-input into the effect. Conversely, we can introduce the delay effect naturally without fading in previous output
-of the effect.
-*/
+// Copyright 2022 Andrew Pennebaker
 
 #include <algorithm>
 
