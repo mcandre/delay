@@ -39,3 +39,9 @@ $ set_startup.sh delay
 ```console
 $ set_startup.sh delay nostartup
 ```
+
+# CLEAN
+
+```console
+rm -rf build
+```
